@@ -13,6 +13,7 @@
 │   ├── /services           # Layer Business Logic: Aturan bisnis inti dan multi-tenant logic
 │   ├── /repositories       # Layer Data: Abstraksi query database menggunakan Ent
 │   └── /jobs               # Handler dan logika untuk antrean tugas Asynq (tagihan, notifikasi)
+├── /modules   
 ├── /pkg                    # Modul utilitas internal yang bisa dibagikan lintas service
 │   ├── /logger             # Setup Slog / Zerolog
 │   ├── /validator          # Setup Go-Playground Validator khusus
