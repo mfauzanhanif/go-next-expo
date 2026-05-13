@@ -1,0 +1,95 @@
+# =============================================================================
+# OpenTelemetry Collector Configuration
+# Menerima traces & metrics dari backend, lalu export ke Prometheus & stdout
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Receivers — Endpoint untuk menerima telemetry data
+# ---------------------------------------------------------------------------
+receivers:
+  # gRPC receiver (port 4317) — digunakan oleh Go SDK (go.opentelemetry.io)
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+# ---------------------------------------------------------------------------
+# Processors — Transformasi data sebelum di-export
+# ---------------------------------------------------------------------------
+processors:
+  # Batch processor untuk mengurangi jumlah export calls
+  batch:
+    send_batch_size: 1024
+    timeout: 5s
+
+  # Memory limiter untuk mencegah OOM
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 256
+    spike_limit_mib: 64
+
+# ---------------------------------------------------------------------------
+# Exporters — Tujuan akhir telemetry data
+# ---------------------------------------------------------------------------
+exporters:
+  # Prometheus exporter — expose metrics di :8888 untuk di-scrape Prometheus
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: "aplikasi"
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # Debug/logging exporter — cetak ke stdout (berguna saat development)
+  debug:
+    verbosity: basic
+
+  # Uncomment jika menggunakan Jaeger untuk tracing UI
+  # otlp/jaeger:
+  #   endpoint: "jaeger:4317"
+  #   tls:
+  #     insecure: true
+
+# ---------------------------------------------------------------------------
+# Extensions — Fitur tambahan collector
+# ---------------------------------------------------------------------------
+extensions:
+  # Health check endpoint
+  health_check:
+    endpoint: "0.0.0.0:13133"
+
+  # Performance profiler
+  pprof:
+    endpoint: "0.0.0.0:1777"
+
+# ---------------------------------------------------------------------------
+# Service — Pipeline configuration
+# ---------------------------------------------------------------------------
+service:
+  extensions: [health_check, pprof]
+
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+
+    # Metrics pipeline
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, debug]
+
+  # Internal telemetry dari collector itu sendiri
+  telemetry:
+    logs:
+      level: "info"
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: "0.0.0.0"
+                port: 8888

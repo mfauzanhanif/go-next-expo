@@ -18,7 +18,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test:
         [
@@ -192,7 +192,7 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
-      - "9001:9001"
+      - "9002:9001"
     volumes:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
