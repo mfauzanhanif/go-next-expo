@@ -1,0 +1,12 @@
+
+[2m$ next build[22m
+[35m[1mAttention[22m[39m: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+[36mhttps://nextjs.org/telemetry[39m
+
+
+> Build error occurred
+Error: > Couldn't find any `pages` or `app` directory. Please create one under the project root
+    at [3mignore-listed frames[23m
+[41m[31m[[39m[49m[41m[30mELIFECYCLE[39m[49m[41m[31m][39m[49m [31mCommand failed with exit code 1.[39m

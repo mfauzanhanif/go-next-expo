@@ -1,5 +1,5 @@
 # =============================================================================
-# docker-compose.yml — Orkestrasi Lokal Utama
+# docker-compose.yaml — Orkestrasi Lokal Utama
 # Semua layanan untuk development environment
 # =============================================================================
 
@@ -20,7 +20,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aplikasi} -d ${POSTGRES_DB:-aplikasi_db}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-aplikasi} -d ${POSTGRES_DB:-aplikasi_db}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -208,12 +212,12 @@ services:
     container_name: aplikasi-prometheus
     restart: unless-stopped
     command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--config.file=/etc/prometheus/prometheus.yaml"
       - "--storage.tsdb.retention.time=15d"
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
-      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/monitoring/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
       - prometheus_data:/prometheus
     networks:
       - aplikasi-network
@@ -246,13 +250,13 @@ services:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: aplikasi-otel-collector
     restart: unless-stopped
-    command: ["--config=/etc/otel-collector-config.yml"]
+    command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
-      - "4317:4317"   # gRPC receiver
-      - "4318:4318"   # HTTP receiver
-      - "8888:8888"   # Prometheus metrics dari collector
+      - "4317:4317" # gRPC receiver
+      - "4318:4318" # HTTP receiver
+      - "8888:8888" # Prometheus metrics dari collector
     volumes:
-      - ./infra/monitoring/otel-collector.yml:/etc/otel-collector-config.yml:ro
+      - ./infra/monitoring/otel-collector.yaml:/etc/otel-collector-config.yaml:ro
     networks:
       - aplikasi-network
 

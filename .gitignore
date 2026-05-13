@@ -1,0 +1,56 @@
+# =================================================================
+# GLOBAL IGNORE
+# =================================================================
+# Mengabaikan folder node_modules di root DAN di semua sub-folder
+node_modules/
+**/node_modules/
+
+# =================================================================
+# TURBOREPO
+# =================================================================
+.turbo/
+
+# =================================================================
+# NEXT.JS (Web)
+# =================================================================
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# =================================================================
+# EXPO / REACT NATIVE (Mobile)
+# =================================================================
+.expo/
+mobile/android/
+mobile/ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# =================================================================
+# ENVIRONMENT VARIABLES
+# =================================================================
+# JANGAN PERNAH upload file .env yang berisi rahasia/password
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# File contoh .env boleh di-upload agar developer lain tahu formatnya
+!*.env.example
+!*.env.sample
+
+# =================================================================
+# LOGS & OS FILES
+# =================================================================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db

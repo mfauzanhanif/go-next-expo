@@ -23,6 +23,7 @@ Menggunakan ekosistem berbasis React untuk memastikan konsistensi antarmuka dan 
 
 | Kategori | Teknologi | Deskripsi / Alasan |
 | :--- | :--- | :--- |
+| **Language** | Node v24 | Versi stabil terbaru untuk performa optimal dan efisiensi memori. |
 | **Monorepo Manager** | Turborepo | Orkestrasi *build system* yang cerdas untuk mempercepat proses pengembangan tim. |
 | **Package Manager** | PNPM | Manajemen dependensi yang sangat efisien dan optimal untuk arsitektur *workspace*. |
 | **Shared Packages** | Internal Packages | Pusat logika UI, skema Zod, dan tipe data yang dipakai bersama oleh Web dan Mobile. |

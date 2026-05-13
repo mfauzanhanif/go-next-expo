@@ -5,8 +5,8 @@
 
 # Variabel
 COMPOSE         := docker compose
-COMPOSE_FILE    := docker-compose.yml
-COMPOSE_PROD    := -f $(COMPOSE_FILE) -f infra/docker/docker-compose.prod.yml
+COMPOSE_FILE    := docker-compose.yaml
+COMPOSE_PROD    := -f $(COMPOSE_FILE) -f infra/docker/docker-compose.prod.yaml
 
 # Warna output
 GREEN  := \033[0;32m
@@ -144,7 +144,7 @@ db-status: ## Cek status migrasi database
 # PRODUCTION
 # =============================================================================
 
-deploy: ## Deploy ke produksi (via docker-compose.prod.yml)
+deploy: ## Deploy ke produksi (via docker-compose.prod.yaml)
 	@echo "$(GREEN)>> Deploying ke produksi...$(NC)"
 	$(COMPOSE) $(COMPOSE_PROD) up -d --build
 	@echo "$(GREEN)>> Deploy selesai!$(NC)"
