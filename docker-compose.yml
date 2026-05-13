@@ -1,0 +1,283 @@
+# =============================================================================
+# docker-compose.yml — Orkestrasi Lokal Utama
+# Semua layanan untuk development environment
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # DATABASE
+  # ===========================================================================
+  postgres:
+    image: postgres:18-alpine
+    container_name: aplikasi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aplikasi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-aplikasi_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aplikasi} -d ${POSTGRES_DB:-aplikasi_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # CACHE & QUEUE
+  # ===========================================================================
+  redis:
+    image: redis:8-alpine
+    container_name: aplikasi-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-secret}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # IDENTITY PROVIDER
+  # ===========================================================================
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    container_name: aplikasi-zitadel
+    restart: unless-stopped
+    command: start-from-init --masterkeyFromEnv --tlsMode disabled
+    environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:-MasterkeyNeedsToHave32Characters}
+      ZITADEL_DATABASE_POSTGRES_HOST: postgres
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: ${ZITADEL_DB:-zitadel}
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: ${POSTGRES_USER:-aplikasi}
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: ${POSTGRES_USER:-aplikasi}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALPORT: 8085
+      ZITADEL_EXTERNALDOMAIN: localhost
+    ports:
+      - "${ZITADEL_PORT:-8085}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # OBJECT STORAGE
+  # ===========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: aplikasi-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # BACKEND — Go + Echo v5
+  # ===========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aplikasi-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-aplikasi}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-aplikasi_db}?sslmode=disable
+      REDIS_URL: redis://:${REDIS_PASSWORD:-secret}@redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      ZITADEL_ISSUER: http://zitadel:8080
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # WORKER — Asynq Background Jobs
+  # ===========================================================================
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aplikasi-worker
+    restart: unless-stopped
+    command: ["/app/worker"]
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-aplikasi}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-aplikasi_db}?sslmode=disable
+      REDIS_URL: redis://:${REDIS_PASSWORD:-secret}@redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # FRONTEND — Next.js (Web)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aplikasi-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8080
+      NEXT_PUBLIC_ZITADEL_ISSUER: http://localhost:${ZITADEL_PORT:-8085}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # REVERSE PROXY — Caddy
+  # ===========================================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: aplikasi-caddy
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+      APP_DOMAIN: ${APP_DOMAIN:-example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      - "9001:9001"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+      - minio
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # MONITORING — Prometheus
+  # ===========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aplikasi-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # MONITORING — Grafana
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aplikasi-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./infra/monitoring/grafana:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - aplikasi-network
+
+  # ===========================================================================
+  # TRACING — OpenTelemetry Collector
+  # ===========================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: aplikasi-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yml"]
+    ports:
+      - "4317:4317"   # gRPC receiver
+      - "4318:4318"   # HTTP receiver
+      - "8888:8888"   # Prometheus metrics dari collector
+    volumes:
+      - ./infra/monitoring/otel-collector.yml:/etc/otel-collector-config.yml:ro
+    networks:
+      - aplikasi-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aplikasi-network:
+    driver: bridge

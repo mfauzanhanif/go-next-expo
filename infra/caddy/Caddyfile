@@ -1,0 +1,173 @@
+# =============================================================================
+# Caddyfile — Reverse Proxy & On-Demand TLS
+# Routing utama untuk Backend API, Frontend Web, MinIO, dan Zitadel
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Global Options
+# ---------------------------------------------------------------------------
+{
+	# Email untuk ACME / Let's Encrypt
+	email {$ACME_EMAIL:admin@example.com}
+
+	# On-Demand TLS — validasi custom domain yayasan via endpoint internal
+	on_demand_tls {
+		ask http://backend:8080/api/v1/domains/verify
+		interval 5m
+		burst 5
+	}
+
+	# Log level
+	log {
+		level INFO
+	}
+}
+
+# ---------------------------------------------------------------------------
+# Snippet: Common Headers
+# ---------------------------------------------------------------------------
+(common-headers) {
+	header {
+		# Security Headers
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+
+		# Hapus header server
+		-Server
+	}
+}
+
+# ---------------------------------------------------------------------------
+# Snippet: CORS untuk API
+# ---------------------------------------------------------------------------
+(cors) {
+	@cors_preflight method OPTIONS
+
+	handle @cors_preflight {
+		header Access-Control-Allow-Origin "{args[0]}"
+		header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+		header Access-Control-Allow-Headers "Content-Type, Authorization, X-Tenant-ID"
+		header Access-Control-Max-Age "86400"
+		respond "" 204
+	}
+
+	header Access-Control-Allow-Origin "{args[0]}"
+	header Access-Control-Allow-Credentials "true"
+}
+
+# =============================================================================
+# DEVELOPMENT — localhost (HTTP, tanpa TLS)
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Frontend Web — localhost:80
+# ---------------------------------------------------------------------------
+:80 {
+	import common-headers
+
+	# API Backend — /api/*
+	handle /api/* {
+		import cors *
+		reverse_proxy backend:8080
+	}
+
+	# Swagger Docs — /swagger/*
+	handle /swagger/* {
+		reverse_proxy backend:8080
+	}
+
+	# MinIO API — /storage/*
+	handle /storage/* {
+		uri strip_prefix /storage
+		reverse_proxy minio:9000
+	}
+
+	# Zitadel Auth — /auth/*
+	handle /auth/* {
+		uri strip_prefix /auth
+		reverse_proxy zitadel:8080
+	}
+
+	# Frontend Web — semua route lainnya
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	# Access Log
+	log {
+		output stdout
+		format json
+	}
+}
+
+# ---------------------------------------------------------------------------
+# MinIO Console — localhost:9001 (direct access)
+# ---------------------------------------------------------------------------
+:9001 {
+	reverse_proxy minio:9001
+}
+
+# =============================================================================
+# PRODUCTION — Custom Domain dengan On-Demand TLS
+# Aktifkan blok ini di produksi (uncomment), dan comment blok :80 di atas
+# =============================================================================
+
+# # ---------------------------------------------------------------------------
+# # Main Domain — app.example.com
+# # ---------------------------------------------------------------------------
+# app.{$APP_DOMAIN:example.com} {
+# 	import common-headers
+#
+# 	# API Backend
+# 	handle /api/* {
+# 		import cors https://app.{$APP_DOMAIN:example.com}
+# 		reverse_proxy backend:8080
+# 	}
+#
+# 	# Frontend Web
+# 	handle {
+# 		reverse_proxy frontend:3000
+# 	}
+#
+# 	log {
+# 		output stdout
+# 		format json
+# 	}
+# }
+
+# # ---------------------------------------------------------------------------
+# # Custom Domain Yayasan — On-Demand TLS
+# # Setiap yayasan bisa menggunakan domain mereka sendiri
+# # ---------------------------------------------------------------------------
+# https:// {
+# 	tls {
+# 		on_demand
+# 	}
+#
+# 	import common-headers
+#
+# 	# API Backend
+# 	handle /api/* {
+# 		import cors {host}
+# 		reverse_proxy backend:8080 {
+# 			header_up X-Forwarded-Host {host}
+# 			header_up X-Tenant-Domain {host}
+# 		}
+# 	}
+#
+# 	# Frontend Web (multi-tenant — resolve tenant dari domain)
+# 	handle {
+# 		reverse_proxy frontend:3000 {
+# 			header_up X-Forwarded-Host {host}
+# 			header_up X-Tenant-Domain {host}
+# 		}
+# 	}
+#
+# 	log {
+# 		output stdout
+# 		format json
+# 	}
+# }

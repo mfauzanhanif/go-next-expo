@@ -1,0 +1,2 @@
+Saran Kecil untuk Caddyfile:
+Pada bagian cors preflight di Caddyfile, Anda memberikan Access-Control-Allow-Origin "{args[0]}". Ini sudah sangat baik, namun pastikan di sisi kode backend Go (Echo v5) nanti Anda juga menerapkan pengecekan origin yang ketat, terutama saat aplikasi masuk ke fase produksi untuk menghindari serangan Cross-Site Request Forgery (CSRF).
