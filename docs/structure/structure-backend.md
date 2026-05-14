@@ -6,6 +6,7 @@
 │   └── /worker             # Entry point terpisah untuk background jobs (Asynq)
 ├── /internal               # Kode spesifik aplikasi (tidak bisa di-import oleh project eksternal)
 │   ├── /config             # Setup dan inisiasi konfigurasi (Env, DB, Redis, MinIO)
+│   ├── /database           # Setup dan inisiasi koneksi ke database (PostgreSQL, Redis, MinIO)
 │   ├── /ent                # Skema dan kode ORM hasil generate dari Ent (graph-based)
 │   ├── /migrations         # File migrasi database deklaratif yang dikelola oleh Atlas
 │   ├── /handlers           # Layer Delivery/Controller: Handler HTTP spesifik untuk Echo

@@ -1,0 +1,13 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "Aplikasi Local",
+            "Group": "Servers",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "aplikasi_db",
+            "Username": "aplikasi",
+            "SSLMode": "prefer"
+        }
+    }
+}

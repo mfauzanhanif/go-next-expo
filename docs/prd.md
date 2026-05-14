@@ -107,7 +107,21 @@ Berbasis React Native (Expo), terhubung dengan API dari arsitektur monorepo.
 
 ## 6. Rencana Rilis (Roadmap)
 
-Untuk mitigasi risiko dan percepatan peluncuran ke pasar (Time-to-Market):
+Untuk mitigasi risiko dan percepatan peluncuran ke pasar (Time-to-Market), pengembangan dibagi menjadi fase teknis (*engineering*) dan fase produk (*product*):
+
+### Fase Teknis (Engineering)
+
+| Fase | Nama | Fokus Utama |
+| :--- | :--- | :--- |
+| **Fase 1** | Fondasi Arsitektur & Infrastruktur | Setup Go module, Echo v5, Graceful Shutdown, standardisasi `/pkg` (response, logger, validator), koneksi DB/Redis/MinIO, dan kontainerisasi lokal via Docker Compose. |
+| **Fase 2** | Multi-Tenancy & Skema Prioritas | Skema global (Tenant, User) dan tenant (GTK, Department, Position) via Ent ORM, migrasi Atlas, dan middleware tenant resolver. |
+| **Fase 3** | Autentikasi & Otorisasi Global | Integrasi Zitadel (JWT/OIDC), engine Casbin (RBAC), dan proteksi endpoint API. |
+| **Fase 4** | Logika Bisnis & Eksekusi API | Layer repository, service, dan handler untuk Master GTK. Dokumentasi OpenAPI via Swaggo. |
+| **Fase 5** | Integrasi Worker & Penyimpanan Objek | Setup MinIO SDK, konfigurasi Asynq worker, dan job pertama (sinkronisasi/notifikasi). |
+
+> Detail lengkap per-item tersedia di [Engineering Roadmap](roadmap.md).
+
+### Fase Produk (Product)
 
 - **Fase 1 (MVP Foundation):** Setup arsitektur, Multi-Tenant DB, Casbin + Zitadel, Modul Core, dan Master Data GTK.
 - **Fase 2 (Student & Operation):** Modul Kesiswaan (termasuk mengakomodasi siswa non-formal), Modul Perizinan & Kedisiplinan.

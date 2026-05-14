@@ -1,50 +1,53 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
+
+	"backend/internal/config"
+	"backend/pkg/logger"
 )
 
 func main() {
-	log.Println("🚀 Worker is starting...")
+	// =========================================================================
+	// 1. Load Configuration
+	// =========================================================================
+	cfg := config.Load()
 
-	redisURL := os.Getenv("REDIS_URL")
-	if redisURL == "" {
-		redisURL = "redis://localhost:6379/0"
+	// =========================================================================
+	// 2. Initialize Logger
+	// =========================================================================
+	log := logger.New(cfg.App.Env)
+	slog.SetDefault(log)
+
+	log.Info("starting worker",
+		slog.String("app", cfg.App.Name),
+		slog.String("env", cfg.App.Env),
+	)
+
+	// =========================================================================
+	// 3. Parse Redis Connection
+	// =========================================================================
+	opt, err := redis.ParseURL(cfg.Redis.URL)
+	if err != nil {
+		log.Error("failed to parse redis URL", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
-	// Parse REDIS_URL to Extract Address and Password
-	// Format expected: redis://:password@host:port/db
-	redisHost := "localhost:6379"
-	redisPassword := ""
-
-	if strings.HasPrefix(redisURL, "redis://") {
-		trimmed := strings.TrimPrefix(redisURL, "redis://")
-		parts := strings.Split(trimmed, "@")
-		if len(parts) == 2 {
-			// Extract password (assuming format :password)
-			credParts := strings.Split(parts[0], ":")
-			if len(credParts) == 2 {
-				redisPassword = credParts[1]
-			}
-			
-			// Extract host
-			hostParts := strings.Split(parts[1], "/")
-			redisHost = hostParts[0]
-		} else {
-			// No password, just host
-			hostParts := strings.Split(trimmed, "/")
-			redisHost = hostParts[0]
-		}
-	}
-
+	// =========================================================================
+	// 4. Initialize Asynq Server
+	// =========================================================================
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: redisHost, Password: redisPassword},
+		asynq.RedisClientOpt{
+			Addr:     opt.Addr,
+			Password: opt.Password,
+			DB:       opt.DB,
+		},
 		asynq.Config{
 			Concurrency: 10,
 			Queues: map[string]int{
@@ -56,21 +59,29 @@ func main() {
 	)
 
 	mux := asynq.NewServeMux()
-	// TODO: Register your tasks here
-	// mux.HandleFunc("email:send", handler.HandleEmailDeliveryTask)
+	// TODO: Register task handlers di Fase 5
+	// mux.HandleFunc("billing:generate", jobs.HandleBillingGenerate)
+	// mux.HandleFunc("notification:send", jobs.HandleNotificationSend)
 
+	// =========================================================================
+	// 5. Start Worker
+	// =========================================================================
 	go func() {
+		log.Info("worker started", slog.Int("concurrency", 10))
 		if err := srv.Run(mux); err != nil {
-			log.Fatalf("could not run worker server: %v", err)
+			log.Error("worker failed to start", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
 	}()
 
-	// Graceful shutdown
+	// =========================================================================
+	// 6. Graceful Shutdown
+	// =========================================================================
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	log.Println("🛑 Worker is shutting down...")
+	log.Info("shutdown signal received, stopping worker...")
 	srv.Shutdown()
-	log.Println("✅ Worker successfully shutdown.")
+	log.Info("worker stopped gracefully")
 }

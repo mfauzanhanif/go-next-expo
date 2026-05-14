@@ -8,12 +8,13 @@ Sistem backend dirancang untuk performa tinggi, keamanan tipe data, dan skalabil
 | **Language** | Go v1.26 | Versi stabil terbaru untuk performa optimal dan efisiensi memori. |
 | **Framework** | Echo v5 | Standar industri dengan performa tinggi dan kompatibilitas penuh terhadap ekosistem net/http. |
 | **Database** | PostgreSQL v18 | Mendukung penuh strategi *logical separation* (skema terpisah) untuk isolasi data multi-tenant. |
+| **DB Driver** | pgx v5 | Driver PostgreSQL paling modern dan efisien di Go, memaksimalkan connection pooling dan tipe data native. |
 | **ORM / Toolkit** | Ent | Pendekatan *graph-based* yang ideal untuk relasi data kompleks antar modul pendidikan. |
 | **Migration** | Atlas | Alat migrasi database *declarative* yang aman untuk mengelola ratusan skema institusi. |
 | **Caching** | Redis v8 | Efisiensi akses data frekuensi tinggi dan manajemen *session* terdistribusi. |
 | **Queue / Jobs** | Asynq | Penjadwalan tugas latar belakang seperti tagihan otomatis dan notifikasi massal. |
 | **Autentikasi** | Zitadel | *Identity Provider* yang dirancang khusus untuk struktur organisasi B2B dan multi-tenant. |
-| **Otorisasi (AuthZ)** | Casbin | Manajemen hak akses yang dinamis untuk mendukung model penjualan modul terpisah. |
+| **Otorisasi (AuthZ)** | Casbin  v3| Manajemen hak akses yang dinamis untuk mendukung model penjualan modul terpisah. |
 | **Logging** | Slog / Zerolog | Standar bawaan Go terbaru untuk pengumpulan log sistem yang terstruktur. |
 | **Validasi** | Go-Playground Validator | Standar industri untuk memastikan integritas data dari *request payload* klien. |
 | **Dokumentasi API** | Swaggo | Pembuatan dokumentasi Swagger/OpenAPI yang tersinkronisasi otomatis dengan kode sumber. |

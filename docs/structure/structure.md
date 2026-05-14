@@ -5,7 +5,7 @@
 │ └── /workflows  
 │ ├── build-and-test.yaml # CI: Menjalankan linter, test, dan build (Frontend & Backend)
 │ └── deploy-production.yaml # CD: Otomatisasi rilis ke server produksi menggunakan Docker
-├── /backend # Repositori Backend (Go + Fiber v3)
+├── /backend # Repositori Backend (Go + Echo v5)
 │ ├── Makefile # Command shortcut - Spesialis Go - Migrasi, generate, build API
 │ └── Dockerfile # Dockerfile untuk backend
 ├── /frontend # Repositori Frontend (Turborepo Workspace)

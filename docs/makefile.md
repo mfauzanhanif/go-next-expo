@@ -112,6 +112,9 @@ Perintah khusus untuk berinteraksi dengan basis kode Go. Jalankan ini di dalam f
 - `make migrate-status`: Mengecek _drift_ atau perbedaan status skema.
 - `make migrate-new NAME=nama_migrasi`: Men-generate skrip migrasi deklaratif baru otomatis dari perubahan skema Ent.
 - `make migrate-hash` : Me-_rehash_ file _directory state_ migrasi setelah modifikasi manual file `.sql`.
+- `make db-tables` : Menampilkan daftar tabel di dalam database via CLI psql.
+- `make db-desc TABLE=nama_tabel` : Menampilkan struktur detail dari tabel yang ditentukan via CLI psql.
+- `make migration-history` : Menampilkan seluruh riwayat migrasi database yang tersimpan pada tabel internal Atlas.
 
 ### Docker
 

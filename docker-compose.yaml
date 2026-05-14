@@ -12,9 +12,9 @@ services:
     container_name: aplikasi-postgres
     restart: unless-stopped
     environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aplikasi_db}
       POSTGRES_USER: ${POSTGRES_USER:-aplikasi}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
-      POSTGRES_DB: ${POSTGRES_DB:-aplikasi_db}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -29,6 +29,27 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - aplikasi-network
+    # ===========================================================================
+  # DATABASE GUI — pgAdmin 4
+  # ===========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aplikasi-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@aplikasi.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./infra/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - aplikasi-network
 
@@ -265,6 +286,8 @@ services:
 # =============================================================================
 volumes:
   postgres_data:
+    driver: local
+  pgadmin_data:
     driver: local
   redis_data:
     driver: local

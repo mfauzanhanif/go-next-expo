@@ -3,6 +3,12 @@
 # Command shortcut untuk development backend lokal
 # =============================================================================
 
+# Gunakan bash sebagai shell (diperlukan untuk `source`, `set -a`, dll.)
+SHELL := /bin/bash
+
+# Pastikan PATH menyertakan lokasi go (snap) dan atlas
+export PATH := /snap/bin:/usr/local/bin:$(PATH)
+
 # Variabel
 APP_NAME        := api-server
 WORKER_NAME     := worker
@@ -31,7 +37,7 @@ NC     := \033[0m # No Color
 # =============================================================================
 
 help: ## Tampilkan daftar command yang tersedia
-	@echo "$(GREEN)Backend Makefile Commands:$(NC)"
+	@echo -e "$(GREEN)Backend Makefile Commands:$(NC)"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'
@@ -42,15 +48,15 @@ help: ## Tampilkan daftar command yang tersedia
 # =============================================================================
 
 run: ## Jalankan API server (development)
-	@echo "$(GREEN)>> Menjalankan API server...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan API server...$(NC)"
 	$(GO) run $(GOFLAGS) $(MAIN_API)
 
 run-worker: ## Jalankan Asynq worker (development)
-	@echo "$(GREEN)>> Menjalankan Asynq worker...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan Asynq worker...$(NC)"
 	$(GO) run $(GOFLAGS) $(MAIN_WORKER)
 
 run-all: ## Jalankan API + Worker secara bersamaan
-	@echo "$(GREEN)>> Menjalankan API server dan Worker...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan API server dan Worker...$(NC)"
 	@trap 'kill 0' EXIT; \
 		$(GO) run $(GOFLAGS) $(MAIN_API) & \
 		$(GO) run $(GOFLAGS) $(MAIN_WORKER) & \
@@ -61,16 +67,16 @@ run-all: ## Jalankan API + Worker secara bersamaan
 # =============================================================================
 
 build: ## Build binary API server
-	@echo "$(GREEN)>> Building API server...$(NC)"
+	@echo -e "$(GREEN)>> Building API server...$(NC)"
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 $(GO) build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) $(MAIN_API)
-	@echo "$(GREEN)>> Binary: $(BUILD_DIR)/$(APP_NAME)$(NC)"
+	@echo -e "$(GREEN)>> Binary: $(BUILD_DIR)/$(APP_NAME)$(NC)"
 
 build-worker: ## Build binary Worker
-	@echo "$(GREEN)>> Building Worker...$(NC)"
+	@echo -e "$(GREEN)>> Building Worker...$(NC)"
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 $(GO) build -ldflags="-w -s" -o $(BUILD_DIR)/$(WORKER_NAME) $(MAIN_WORKER)
-	@echo "$(GREEN)>> Binary: $(BUILD_DIR)/$(WORKER_NAME)$(NC)"
+	@echo -e "$(GREEN)>> Binary: $(BUILD_DIR)/$(WORKER_NAME)$(NC)"
 
 build-all: build build-worker ## Build semua binary (API + Worker)
 
@@ -79,27 +85,27 @@ build-all: build build-worker ## Build semua binary (API + Worker)
 # =============================================================================
 
 test: ## Jalankan semua unit tests
-	@echo "$(GREEN)>> Menjalankan tests...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan tests...$(NC)"
 	$(GO) test ./... -race -count=1
 
 test-coverage: ## Jalankan tests dengan coverage report
-	@echo "$(GREEN)>> Menjalankan tests dengan coverage...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan tests dengan coverage...$(NC)"
 	@mkdir -p $(BUILD_DIR)
 	$(GO) test ./... -race -count=1 -coverprofile=$(BUILD_DIR)/coverage.out
 	$(GO) tool cover -html=$(BUILD_DIR)/coverage.out -o $(BUILD_DIR)/coverage.html
-	@echo "$(GREEN)>> Coverage report: $(BUILD_DIR)/coverage.html$(NC)"
+	@echo -e "$(GREEN)>> Coverage report: $(BUILD_DIR)/coverage.html$(NC)"
 
 lint: ## Jalankan golangci-lint
-	@echo "$(GREEN)>> Menjalankan linter...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan linter...$(NC)"
 	golangci-lint run ./...
 
 fmt: ## Format semua kode Go
-	@echo "$(GREEN)>> Formatting kode...$(NC)"
+	@echo -e "$(GREEN)>> Formatting kode...$(NC)"
 	$(GO) fmt ./...
 	goimports -w .
 
 vet: ## Jalankan go vet untuk analisis statis
-	@echo "$(GREEN)>> Menjalankan go vet...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan go vet...$(NC)"
 	$(GO) vet ./...
 
 check: fmt vet lint test ## Jalankan semua quality checks (format, vet, lint, test)
@@ -109,11 +115,11 @@ check: fmt vet lint test ## Jalankan semua quality checks (format, vet, lint, te
 # =============================================================================
 
 tidy: ## Bersihkan dan sinkronisasi dependensi Go
-	@echo "$(GREEN)>> Menjalankan go mod tidy...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan go mod tidy...$(NC)"
 	$(GO) mod tidy
 
 vendor: ## Download dependensi ke folder vendor
-	@echo "$(GREEN)>> Vendoring dependensi...$(NC)"
+	@echo -e "$(GREEN)>> Vendoring dependensi...$(NC)"
 	$(GO) mod vendor
 
 # =============================================================================
@@ -121,21 +127,21 @@ vendor: ## Download dependensi ke folder vendor
 # =============================================================================
 
 swagger: ## Generate dokumentasi Swagger/OpenAPI via Swaggo
-	@echo "$(GREEN)>> Generating Swagger docs...$(NC)"
-	swag init -g $(MAIN_API)/main.go -o ./docs --parseDependency --parseInternal
-	@echo "$(GREEN)>> Swagger docs generated di ./docs$(NC)"
+	@echo -e "$(GREEN)>> Generating Swagger docs...$(NC)"
+	~/go/bin/swag init -g cmd/api/main.go -o ./docs --parseDependency --parseInternal
+	@echo -e "$(GREEN)>> Swagger docs generated di ./docs$(NC)"
 
 ent-generate: ## Generate kode Ent ORM dari skema
-	@echo "$(GREEN)>> Generating Ent code...$(NC)"
+	@echo -e "$(GREEN)>> Generating Ent code...$(NC)"
 	$(GO) generate ./internal/ent
-	@echo "$(GREEN)>> Ent code generated$(NC)"
+	@echo -e "$(GREEN)>> Ent code generated$(NC)"
 
 ent-new: ## Buat skema Ent baru (usage: make ent-new NAME=User)
 	@if [ -z "$(NAME)" ]; then \
 		echo "$(RED)>> Error: Tentukan nama skema. Contoh: make ent-new NAME=User$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)>> Membuat skema Ent baru: $(NAME)...$(NC)"
+	@echo -e "$(GREEN)>> Membuat skema Ent baru: $(NAME)...$(NC)"
 	$(GO) run -mod=mod entgo.io/ent/cmd/ent new $(NAME)
 
 # =============================================================================
@@ -143,35 +149,51 @@ ent-new: ## Buat skema Ent baru (usage: make ent-new NAME=User)
 # =============================================================================
 
 migrate: ## Jalankan migrasi database
-	@echo "$(GREEN)>> Menjalankan migrasi database...$(NC)"
-	atlas migrate apply --dir "file://internal/migrations" --url "$(DATABASE_URL)"
+	@echo -e "$(GREEN)>> Menjalankan migrasi database...$(NC)"
+	@set -a; . $(ENV_FILE); set +a; atlas migrate apply --env local --url "$$DATABASE_URL"
 
 migrate-status: ## Cek status migrasi database
-	@echo "$(GREEN)>> Cek status migrasi...$(NC)"
-	atlas migrate status --dir "file://internal/migrations" --url "$(DATABASE_URL)"
+	@echo -e "$(GREEN)>> Cek status migrasi...$(NC)"
+	@set -a; . $(ENV_FILE); set +a; atlas migrate status --env local --url "$$DATABASE_URL"
 
 migrate-new: ## Buat file migrasi baru (usage: make migrate-new NAME=add_users_table)
 	@if [ -z "$(NAME)" ]; then \
 		echo "$(RED)>> Error: Tentukan nama migrasi. Contoh: make migrate-new NAME=add_users_table$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)>> Membuat migrasi baru: $(NAME)...$(NC)"
-	atlas migrate diff $(NAME) --dir "file://internal/migrations" --to "ent://internal/ent/schema" --dev-url "$(DEV_DATABASE_URL)"
+	@echo -e "$(GREEN)>> Membuat migrasi baru: $(NAME)...$(NC)"
+	@set -a; . $(ENV_FILE); set +a; atlas migrate diff $(NAME) --env local
 
 migrate-hash: ## Rehash migrasi (setelah edit manual)
-	@echo "$(GREEN)>> Rehashing migrasi...$(NC)"
-	atlas migrate hash --dir "file://internal/migrations"
+	@echo -e "$(GREEN)>> Rehashing migrasi...$(NC)"
+	atlas migrate hash --env local
+
+db-tables: ## Lihat daftar tabel di database (via psql)
+	@echo -e "$(GREEN)>> Menampilkan daftar tabel...$(NC)"
+	docker exec -i aplikasi-postgres psql -U aplikasi -d aplikasi_db -c '\dt'
+
+db-desc: ## Lihat struktur tabel (usage: make db-desc TABLE=nama_tabel)
+	@if [ -z "$(TABLE)" ]; then \
+		echo "$(RED)>> Error: Tentukan nama tabel. Contoh: make db-desc TABLE=tenants$(NC)"; \
+		exit 1; \
+	fi
+	@echo -e "$(GREEN)>> Menampilkan struktur tabel $(TABLE)...$(NC)"
+	docker exec -i aplikasi-postgres psql -U aplikasi -d aplikasi_db -c '\d $(TABLE)'
+
+migration-history: ## Lihat riwayat migrasi di database (via psql)
+	@echo -e "$(GREEN)>> Menampilkan riwayat migrasi...$(NC)"
+	docker exec -i aplikasi-postgres psql -U aplikasi -d aplikasi_db -c 'SELECT * FROM atlas_schema_revisions.atlas_schema_revisions;'
 
 # =============================================================================
 # DOCKER
 # =============================================================================
 
 docker-build: ## Build Docker image backend
-	@echo "$(GREEN)>> Building Docker image backend...$(NC)"
+	@echo -e "$(GREEN)>> Building Docker image backend...$(NC)"
 	docker build -t aplikasi-backend:latest .
 
 docker-run: ## Jalankan container backend
-	@echo "$(GREEN)>> Menjalankan container backend...$(NC)"
+	@echo -e "$(GREEN)>> Menjalankan container backend...$(NC)"
 	docker run --rm -p 8080:8080 --env-file $(ENV_FILE) aplikasi-backend:latest
 
 # =============================================================================
@@ -179,7 +201,7 @@ docker-run: ## Jalankan container backend
 # =============================================================================
 
 clean: ## Bersihkan file build dan cache
-	@echo "$(GREEN)>> Membersihkan...$(NC)"
+	@echo -e "$(GREEN)>> Membersihkan...$(NC)"
 	@rm -rf $(BUILD_DIR)
 	$(GO) clean -cache -testcache
-	@echo "$(GREEN)>> Bersih!$(NC)"
+	@echo -e "$(GREEN)>> Bersih!$(NC)"
