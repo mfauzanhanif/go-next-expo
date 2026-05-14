@@ -7,7 +7,9 @@ Struktur root dari direktori monorepo frontend (`/frontend`). Dokumentasi ini me
 ├── /web                            # Direktori aplikasi web Next.js (detail ada di structure-frontend-web.md)
 ├── /packages                       # Direktori shared workspace packages (digunakan lintas aplikasi)
 │   ├── /config                     # Paket untuk konfigurasi bersama (misal: ESLint, TypeScript, Tailwind)
-│   └── /ui                         # Paket untuk komponen antarmuka bersama (Shared UI / Shadcn)
+│   |   └── /tailwind.config.ts     # Konfigurasi Desain DNA Utama Aplikasi
+│   ├── /ui-web                     # Komponen UI Shadcn murni untuk Next.js
+│   └── /ui-mobile                  # Komponen RN didesain ala Shadcn via NativeWind
 ├── Dockerfile                      # Konfigurasi multi-stage Docker build untuk frontend
 ├── Makefile                        # Shortcut command line untuk mempermudah development
 ├── package.json                    # Konfigurasi root package manager (Turborepo & PNPM)
